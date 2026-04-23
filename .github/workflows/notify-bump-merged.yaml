@@ -1,0 +1,30 @@
+name: Notify automation on bump-PR merge
+
+# Fires when any PR whose head branch starts with `automation/` is merged.
+# Covers both bump-op PRs (automation/bump-*) and cascade-stage PRs
+# (automation/cascade-*). Delegates the actual dispatch to the reusable
+# workflow in the automation repo — payload shape and target are defined
+# there; this file only owns the trigger and the merge/branch filter.
+#
+# Required repository secret:
+#   AUTOMATION_DISPATCH_TOKEN  PAT with `repo` scope on the automation repo
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions: {}
+
+jobs:
+  notify:
+    if: >-
+      github.event.pull_request.merged == true &&
+      startsWith(github.event.pull_request.head.ref, 'automation/')
+    uses: tomleb/frameworks-automation/.github/workflows/notify-bump-merged.yaml@main
+    with:
+      repo: ${{ github.repository }}
+      pr: ${{ github.event.pull_request.number }}
+      head_branch: ${{ github.event.pull_request.head.ref }}
+      base_branch: ${{ github.event.pull_request.base.ref }}
+    secrets:
+      AUTOMATION_DISPATCH_TOKEN: ${{ secrets.AUTOMATION_DISPATCH_TOKEN }}
